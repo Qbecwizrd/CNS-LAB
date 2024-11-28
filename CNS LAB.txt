@@ -1,0 +1,435 @@
+TASK 1(a)
+
+import java.util.Scanner;
+
+public class CaesarCipher {
+    // Method to shift text by a given key (encrypt/decrypt)
+    public static String shiftText(String text, int key) {
+        StringBuilder result = new StringBuilder();
+
+        for (char ch : text.toCharArray()) {
+            if (Character.isLetter(ch)) {
+                char base = Character.isUpperCase(ch) ? 'A' : 'a';
+                result.append((char) ((ch - base + key + 26) % 26 + base));
+            } else {
+                result.append(ch); // Keep non-alphabetic characters
+            }
+        }
+        return result.toString();
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter the text:");
+        String text = scanner.nextLine();
+
+        System.out.println("Enter the key:");
+        int key = scanner.nextInt();
+
+        // Encrypt the text
+        String encryptedText = shiftText(text, key);
+        System.out.println("Encrypted text: " + encryptedText);
+
+        // Decrypt the text
+        String decryptedText = shiftText(encryptedText, -key);
+        System.out.println("Decrypted text: " + decryptedText);
+
+        scanner.close();
+    }
+}
+
+
+Task 1(b)
+
+import java.util.Scanner;
+
+public class SimpleSubstitutionCipher {
+    public static void main(String[] args) {
+        String alphabet = "abcdefghijklmnopqrstuvwxyz";
+        String key = "qwertyuiopasdfghjklzxcvbnm";
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter the plaintext:");
+        String plaintext = scanner.nextLine().toLowerCase();
+
+        String ciphertext = transform(plaintext, alphabet, key);
+        System.out.println("Encrypted text: " + ciphertext);
+        System.out.println("Decrypted text: " + transform(ciphertext, key, alphabet));
+
+        scanner.close();
+    }
+
+    public static String transform(String text, String from, String to) {
+        StringBuilder result = new StringBuilder();
+        for (char ch : text.toCharArray())
+            result.append(from.indexOf(ch) >= 0 ? to.charAt(from.indexOf(ch)) : ch);
+        return result.toString();
+    }
+}
+
+
+Task 1(c)
+
+
+import java.util.Scanner;
+
+public class HillCipher {
+    public static void main(String[] args) {
+        int[][] key = {{3, 3}, {2, 5}};
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("Enter plaintext:");
+        String text = sc.nextLine().toLowerCase().replaceAll("[^a-z]", "");
+        text += (text.length() % 2 != 0) ? "x" : "";
+
+        String encrypted = transform(text, key);
+        System.out.println("Encrypted: " + encrypted);
+
+        int det = (key[0][0] * key[1][1] - key[0][1] * key[1][0] + 26) % 26;
+        int invDet = modInverse(det, 26);
+        int[][] invKey = {{key[1][1] * invDet % 26, -key[0][1] * invDet % 26},
+                          {-key[1][0] * invDet % 26, key[0][0] * invDet % 26}};
+        String decrypted = transform(encrypted, invKey);
+        System.out.println("Decrypted: " + decrypted);
+
+        sc.close();
+    }
+
+    public static String transform(String text, int[][] key) {
+        StringBuilder res = new StringBuilder();
+        for (int i = 0; i < text.length(); i += 2) {
+            int[] block = {text.charAt(i) - 'a', text.charAt(i + 1) - 'a'};
+            for (int[] row : key)
+                res.append((char) ((row[0] * block[0] + row[1] * block[1] + 26) % 26 + 'a'));
+        }
+        return res.toString();
+    }
+
+    public static int modInverse(int a, int m) {
+        for (int x = 1; x < m; x++) if ((a * x) % m == 1) return x;
+        return 1;
+    }
+}
+
+
+
+TASK 2
+
+import java.util.Scanner;
+
+public class DES {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String key = "1010101010111011000010010001100000100111001101101100110011011101";
+        System.out.println("Enter 64-bit binary plaintext:");
+        String plaintext = sc.nextLine();
+
+        if (plaintext.length() != 64) {
+            System.out.println("Plaintext must be 64 bits!");
+            return;
+        }
+
+        String ciphertext = transform(plaintext, key, true);
+        String decrypted = transform(ciphertext, key, false);
+
+        System.out.println("Ciphertext: " + ciphertext);
+        System.out.println("Decrypted: " + decrypted);
+
+        sc.close();
+    }
+
+    public static String transform(String text, String key, boolean encrypt) {
+        String permuted = permute(text);
+        String left = permuted.substring(0, 32), right = permuted.substring(32);
+        for (int i = 0; i < 2; i++) { // 2 rounds for simplicity
+            String roundKey = key.substring(encrypt ? i : 15 - i, encrypt ? i + 48 : 15 - i + 48);
+            String newRight = xor(left, substitute(xor(right + right.substring(0, 16), roundKey)));
+            left = right;
+            right = newRight;
+        }
+        return permute(right + left);
+    }
+
+    public static String permute(String text) {
+        StringBuilder p = new StringBuilder(text);
+        for (int i = 0; i < text.length(); i += 2) {
+            char temp = p.charAt(i);
+            p.setCharAt(i, p.charAt(i + 1));
+            p.setCharAt(i + 1, temp);
+        }
+        return p.toString();
+    }
+
+    public static String xor(String a, String b) {
+        StringBuilder res = new StringBuilder();
+        for (int i = 0; i < a.length(); i++) res.append(a.charAt(i) == b.charAt(i) ? '0' : '1');
+        return res.toString();
+    }
+
+    public static String substitute(String text) {
+        return text.substring(0, 16) + text.substring(16).replace('0', '1');
+    }
+}
+
+TASK3 
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import java.util.Base64;
+
+public class BlowfishExample {
+    public static void main(String[] args) throws Exception {
+        String plaintext = "Hello, Blowfish!";
+        SecretKey key = KeyGenerator.getInstance("Blowfish").generateKey();
+
+        String encrypted = transform(plaintext, key, Cipher.ENCRYPT_MODE);
+        String decrypted = transform(encrypted, key, Cipher.DECRYPT_MODE);
+
+        System.out.println("Plaintext: " + plaintext);
+        System.out.println("Encrypted: " + encrypted);
+        System.out.println("Decrypted: " + decrypted);
+    }
+
+    private static String transform(String input, SecretKey key, int mode) throws Exception {
+        Cipher cipher = Cipher.getInstance("Blowfish");
+        cipher.init(mode, key);
+        byte[] output = mode == Cipher.ENCRYPT_MODE 
+            ? cipher.doFinal(input.getBytes()) 
+            : cipher.doFinal(Base64.getDecoder().decode(input));
+        return mode == Cipher.ENCRYPT_MODE 
+            ? Base64.getEncoder().encodeToString(output) 
+            : new String(output);
+    }
+}
+
+
+
+
+TASK 4 
+
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import java.util.Base64;
+
+public class AESExample {
+    public static void main(String[] args) throws Exception {
+        String plaintext = "Hello, AES!";
+        SecretKey key = KeyGenerator.getInstance("AES").generateKey();
+
+        String encrypted = transform(plaintext, key, Cipher.ENCRYPT_MODE);
+        String decrypted = transform(encrypted, key, Cipher.DECRYPT_MODE);
+
+        System.out.println("Plaintext: " + plaintext);
+        System.out.println("Encrypted: " + encrypted);
+        System.out.println("Decrypted: " + decrypted);
+    }
+
+    private static String transform(String input, SecretKey key, int mode) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(mode, key);
+        byte[] output = mode == Cipher.ENCRYPT_MODE 
+            ? cipher.doFinal(input.getBytes()) 
+            : cipher.doFinal(Base64.getDecoder().decode(input));
+        return mode == Cipher.ENCRYPT_MODE 
+            ? Base64.getEncoder().encodeToString(output) 
+            : new String(output);
+    }
+}
+
+
+TASK 5
+
+import java.util.Arrays;
+
+public class RC4 {
+    private static byte[] initializeState(byte[] key) {
+        byte[] S = new byte[256];
+        for (int i = 0; i < 256; i++) S[i] = (byte) i;
+
+        for (int i = 0, j = 0; i < 256; i++) {
+            j = (j + S[i] + key[i % key.length]) & 0xFF;
+            byte temp = S[i]; S[i] = S[j]; S[j] = temp;
+        }
+        return S;
+    }
+
+    private static byte[] rc4(byte[] key, byte[] data) {
+        byte[] S = initializeState(key), result = new byte[data.length];
+        for (int i = 0, j = 0, k = 0; k < data.length; k++) {
+            i = (i + 1) & 0xFF;
+            j = (j + S[i]) & 0xFF;
+            byte temp = S[i]; S[i] = S[j]; S[j] = temp;
+            result[k] = (byte) (data[k] ^ S[(S[i] + S[j]) & 0xFF]);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        String key = "Key", plaintext = "Hello, RC4!";
+        byte[] ciphertext = rc4(key.getBytes(), plaintext.getBytes());
+        System.out.println("Ciphertext: " + Arrays.toString(ciphertext));
+        System.out.println("Decrypted: " + new String(rc4(key.getBytes(), ciphertext)));
+    }
+}
+
+
+TASK  7
+
+import java.security.*;
+import javax.crypto.Cipher;
+import java.util.Base64;
+
+public class RSAExample {
+    public static void main(String[] args) throws Exception {
+        // Generate RSA key pair
+        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").initialize(2048).generateKeyPair();
+
+        // Encrypt and decrypt message
+        String originalMessage = "Hello, RSA!";
+        Cipher cipher = Cipher.getInstance("RSA");
+
+        cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
+        String encryptedMessage = Base64.getEncoder().encodeToString(cipher.doFinal(originalMessage.getBytes()));
+
+        cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
+        String decryptedMessage = new String(cipher.doFinal(Base64.getDecoder().decode(encryptedMessage)));
+
+        System.out.println("Encrypted: " + encryptedMessage);
+        System.out.println("Decrypted: " + decryptedMessage);
+    }
+}
+
+
+Task 8
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
+
+public class DiffieHellmanExample {
+    public static void main(String[] args) {
+        BigInteger p = new BigInteger("23"), g = new BigInteger("5");
+        SecureRandom random = new SecureRandom();
+
+        // Generate key pairs for Alice and Bob
+        BigInteger[] aliceKey = generateKeyPair(p, g, random);
+        BigInteger[] bobKey = generateKeyPair(p, g, random);
+
+        // Shared secret calculation
+        BigInteger aliceSecret = bobKey[1].modPow(aliceKey[0], p);
+        BigInteger bobSecret = aliceKey[1].modPow(bobKey[0], p);
+
+        // Output results
+        System.out.println("Alice's shared secret: " + aliceSecret);
+        System.out.println("Bob's shared secret: " + bobSecret);
+        System.out.println("Shared secret is " + (aliceSecret.equals(bobSecret) ? "the same" : "different"));
+    }
+
+    private static BigInteger[] generateKeyPair(BigInteger p, BigInteger g, SecureRandom random) {
+        BigInteger a = new BigInteger(p.bitLength(), random).mod(p.subtract(BigInteger.ONE));
+        return new BigInteger[]{a, g.modPow(a, p)};
+    }
+}
+
+Task 9
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+public class SHA1Example {
+
+    public static void main(String[] args) {
+        try {
+            // Input message
+            String message = "hello";
+
+            // Create a SHA-1 MessageDigest instance
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+
+            // Update the message to the digest
+            byte[] hash = digest.digest(message.getBytes());
+
+            // Convert the hash to a hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(String.format("%02x", b));
+            }
+
+            // Output the hash in hexadecimal form
+            System.out.println("SHA-1 hash of the message: " + hexString.toString());
+
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("SHA-1 algorithm not available: " + e.getMessage());
+        }
+    }
+}
+
+
+Task 10
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+public class MD5Example {
+
+    public static void main(String[] args) {
+        try {
+            // Input message
+            String message = "hello";
+
+            // Create an MD5 MessageDigest instance
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+
+            // Update the message to the digest
+            byte[] hash = digest.digest(message.getBytes());
+
+            // Convert the hash to a hexadecimal string
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                hexString.append(String.format("%02x", b));
+            }
+
+            // Output the hash in hexadecimal form
+            System.out.println("MD5 hash of the message: " + hexString.toString());
+
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("MD5 algorithm not available: " + e.getMessage());
+        }
+    }
+}
+
+
+Task 12
+
+import java.security.*;
+import java.util.Base64;
+
+public class DigitalSignatureExample {
+    public static void main(String[] args) throws Exception {
+        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").initialize(2048).generateKeyPair();
+        String message = "This is a secret message";
+
+        byte[] signedMessage = signMessage(message, keyPair.getPrivate());
+        System.out.println("Signed Message (Base64): " + Base64.getEncoder().encodeToString(signedMessage));
+
+        boolean isVerified = verifySignature(message, signedMessage, keyPair.getPublic());
+        System.out.println(isVerified ? "The signature is valid." : "The signature is invalid.");
+    }
+
+    private static byte[] signMessage(String message, PrivateKey privateKey) throws Exception {
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(privateKey);
+        signature.update(message.getBytes());
+        return signature.sign();
+    }
+
+    private static boolean verifySignature(String message, byte[] signedMessage, PublicKey publicKey) throws Exception {
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initVerify(publicKey);
+        signature.update(message.getBytes());
+        return signature.verify(signedMessage);
+    }
+}
